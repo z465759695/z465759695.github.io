@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>hiredis文档 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Version 0.9.0 is a major overhaul of hiredis in every aspect. However, upgrading existingcode using hiredis should not be a big pain. The key thing to keep in mind whenupgrading is that hiredis &amp;gt;=">
+<meta name="keywords" content="redis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="hiredis文档">
+<meta property="og:url" content="http://yoursite.com/2018/01/04/hiredis/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Version 0.9.0 is a major overhaul of hiredis in every aspect. However, upgrading existingcode using hiredis should not be a big pain. The key thing to keep in mind whenupgrading is that hiredis &amp;gt;=">
+<meta property="og:updated_time" content="2018-01-04T08:40:32.012Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="hiredis文档">
+<meta name="twitter:description" content="Version 0.9.0 is a major overhaul of hiredis in every aspect. However, upgrading existingcode using hiredis should not be a big pain. The key thing to keep in mind whenupgrading is that hiredis &amp;gt;=">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Suche"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-hiredis" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/01/04/hiredis/" class="article-date">
+  <time datetime="2018-01-04T08:29:03.000Z" itemprop="datePublished">2018-01-04</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Redis/">Redis</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      hiredis文档
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Version 0.9.0 is a major overhaul of hiredis in every aspect. However, upgrading existing<br>code using hiredis should not be a big pain. The key thing to keep in mind when<br>upgrading is that hiredis &gt;= 0.9.0 uses a <code>redisContext*</code> to keep state, in contrast to<br>the stateless 0.0.1 that only has a file descriptor to work with.</p>
+<h2 id="Synchronous-API"><a href="#Synchronous-API" class="headerlink" title="Synchronous API"></a>Synchronous API</h2><p>To consume the synchronous API, there are only a few function calls that need to be introduced:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">redisContext *<span class="title">redisConnect</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *ip, <span class="keyword">int</span> port)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">redisCommand</span><span class="params">(redisContext *c, <span class="keyword">const</span> <span class="keyword">char</span> *format, ...)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">freeReplyObject</span><span class="params">(<span class="keyword">void</span> *reply)</span></span>;</span><br></pre></td></tr></table></figure>
+<h3 id="Connecting"><a href="#Connecting" class="headerlink" title="Connecting"></a>Connecting</h3><p>The function <code>redisConnect</code> is used to create a so-called <code>redisContext</code>. The<br>context is where Hiredis holds state for a connection. The <code>redisContext</code><br>struct has an integer <code>err</code> field that is non-zero when the connection is in<br>an error state. The field <code>errstr</code> will contain a string with a description of<br>the error. More information on errors can be found in the <strong>Errors</strong> section.<br>After trying to connect to Redis using <code>redisConnect</code> you should<br>check the <code>err</code> field to see if establishing the connection was successful:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">redisContext *c = redisConnect(<span class="string">"127.0.0.1"</span>, <span class="number">6379</span>);</span><br><span class="line"><span class="keyword">if</span> (c != <span class="literal">NULL</span> &amp;&amp; c-&gt;err) &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Error: %s\n"</span>, c-&gt;errstr);</span><br><span class="line">    <span class="comment">// handle error</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="Sending-commands"><a href="#Sending-commands" class="headerlink" title="Sending commands"></a>Sending commands</h3><p>There are several ways to issue commands to Redis. The first that will be introduced is<br><code>redisCommand</code>. This function takes a format similar to printf. In the simplest form,<br>it is used like this:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">reply = redisCommand(context, <span class="string">"SET foo bar"</span>);</span><br></pre></td></tr></table></figure></p>
+<p>The specifier <code>%s</code> interpolates a string in the command, and uses <code>strlen</code> to<br>determine the length of the string:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">reply = redisCommand(context, <span class="string">"SET foo %s"</span>, value);</span><br></pre></td></tr></table></figure></p>
+<p>When you need to pass binary safe strings in a command, the <code>%b</code> specifier can be<br>used. Together with a pointer to the string, it requires a <code>size_t</code> length argument<br>of the string:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">reply = redisCommand(context, <span class="string">"SET foo %b"</span>, value, (<span class="keyword">size_t</span>) valuelen);</span><br></pre></td></tr></table></figure></p>
+<p>Internally, Hiredis splits the command in different arguments and will<br>convert it to the protocol used to communicate with Redis.<br>One or more spaces separates arguments, so you can use the specifiers<br>anywhere in an argument:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">reply = redisCommand(context, <span class="string">"SET key:%s %s"</span>, myid, value);</span><br></pre></td></tr></table></figure></p>
+<h3 id="Using-replies"><a href="#Using-replies" class="headerlink" title="Using replies"></a>Using replies</h3><p>The return value of <code>redisCommand</code> holds a reply when the command was<br>successfully executed. When an error occurs, the return value is <code>NULL</code> and<br>the <code>err</code> field in the context will be set (see section on <strong>Errors</strong>).<br>Once an error is returned the context cannot be reused and you should set up<br>a new connection.</p>
+<p>The standard replies that <code>redisCommand</code> are of the type <code>redisReply</code>. The<br><code>type</code> field in the <code>redisReply</code> should be used to test what kind of reply<br>was received:</p>
+<ul>
+<li><p><strong><code>REDIS_REPLY_STATUS</code></strong>:</p>
+<ul>
+<li>The command replied with a status reply. The status string can be accessed using <code>reply-&gt;str</code>.<br>The length of this string can be accessed using <code>reply-&gt;len</code>.</li>
+</ul>
+</li>
+<li><p><strong><code>REDIS_REPLY_ERROR</code></strong>:</p>
+<ul>
+<li>The command replied with an error. The error string can be accessed identical to <code>REDIS_REPLY_STATUS</code>.</li>
+</ul>
+</li>
+<li><p><strong><code>REDIS_REPLY_INTEGER</code></strong>:</p>
+<ul>
+<li>The command replied with an integer. The integer value can be accessed using the<br><code>reply-&gt;integer</code> field of type <code>long long</code>.</li>
+</ul>
+</li>
+<li><p><strong><code>REDIS_REPLY_NIL</code></strong>:</p>
+<ul>
+<li>The command replied with a <strong>nil</strong> object. There is no data to access.</li>
+</ul>
+</li>
+<li><p><strong><code>REDIS_REPLY_STRING</code></strong>:</p>
+<ul>
+<li>A bulk (string) reply. The value of the reply can be accessed using <code>reply-&gt;str</code>.<br>The length of this string can be accessed using <code>reply-&gt;len</code>.</li>
+</ul>
+</li>
+<li><p><strong><code>REDIS_REPLY_ARRAY</code></strong>:</p>
+<ul>
+<li>A multi bulk reply. The number of elements in the multi bulk reply is stored in<br><code>reply-&gt;elements</code>. Every element in the multi bulk reply is a <code>redisReply</code> object as well<br>and can be accessed via <code>reply-&gt;element[..index..]</code>.<br>Redis may reply with nested arrays but this is fully supported.</li>
+</ul>
+</li>
+</ul>
+<p>Replies should be freed using the <code>freeReplyObject()</code> function.<br>Note that this function will take care of freeing sub-reply objects<br>contained in arrays and nested arrays, so there is no need for the user to<br>free the sub replies (it is actually harmful and will corrupt the memory).</p>
+<p><strong>Important:</strong> the current version of hiredis (0.10.0) frees replies when the<br>asynchronous API is used. This means you should not call <code>freeReplyObject</code> when<br>you use this API. The reply is cleaned up by hiredis <em>after</em> the callback<br>returns. This behavior will probably change in future releases, so make sure to<br>keep an eye on the changelog when upgrading (see issue #39).</p>
+<h3 id="Cleaning-up"><a href="#Cleaning-up" class="headerlink" title="Cleaning up"></a>Cleaning up</h3><p>To disconnect and free the context the following function can be used:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">redisFree</span><span class="params">(redisContext *c)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>This function immediately closes the socket and then frees the allocations done in<br>creating the context.</p>
+<h3 id="Sending-commands-cont’d"><a href="#Sending-commands-cont’d" class="headerlink" title="Sending commands (cont’d)"></a>Sending commands (cont’d)</h3><p>Together with <code>redisCommand</code>, the function <code>redisCommandArgv</code> can be used to issue commands.<br>It has the following prototype:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">redisCommandArgv</span><span class="params">(redisContext *c, <span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> **argv, <span class="keyword">const</span> <span class="keyword">size_t</span> *argvlen)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>It takes the number of arguments <code>argc</code>, an array of strings <code>argv</code> and the lengths of the<br>arguments <code>argvlen</code>. For convenience, <code>argvlen</code> may be set to <code>NULL</code> and the function will<br>use <code>strlen(3)</code> on every argument to determine its length. Obviously, when any of the arguments<br>need to be binary safe, the entire array of lengths <code>argvlen</code> should be provided.</p>
+<p>The return value has the same semantic as <code>redisCommand</code>.</p>
+<h3 id="Pipelining"><a href="#Pipelining" class="headerlink" title="Pipelining"></a>Pipelining</h3><p>To explain how Hiredis supports pipelining in a blocking connection, there needs to be<br>understanding of the internal execution flow.</p>
+<p>When any of the functions in the <code>redisCommand</code> family is called, Hiredis first formats the<br>command according to the Redis protocol. The formatted command is then put in the output buffer<br>of the context. This output buffer is dynamic, so it can hold any number of commands.<br>After the command is put in the output buffer, <code>redisGetReply</code> is called. This function has the<br>following two execution paths:</p>
+<ol>
+<li>The input buffer is non-empty:<ul>
+<li>Try to parse a single reply from the input buffer and return it</li>
+<li>If no reply could be parsed, continue at <em>2</em></li>
+</ul>
+</li>
+<li>The input buffer is empty:<ul>
+<li>Write the <strong>entire</strong> output buffer to the socket</li>
+<li>Read from the socket until a single reply could be parsed</li>
+</ul>
+</li>
+</ol>
+<p>The function <code>redisGetReply</code> is exported as part of the Hiredis API and can be used when a reply<br>is expected on the socket. To pipeline commands, the only things that needs to be done is<br>filling up the output buffer. For this cause, two commands can be used that are identical<br>to the <code>redisCommand</code> family, apart from not returning a reply:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">redisAppendCommand</span><span class="params">(redisContext *c, <span class="keyword">const</span> <span class="keyword">char</span> *format, ...)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">redisAppendCommandArgv</span><span class="params">(redisContext *c, <span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> **argv, <span class="keyword">const</span> <span class="keyword">size_t</span> *argvlen)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>After calling either function one or more times, <code>redisGetReply</code> can be used to receive the<br>subsequent replies. The return value for this function is either <code>REDIS_OK</code> or <code>REDIS_ERR</code>, where<br>the latter means an error occurred while reading a reply. Just as with the other commands,<br>the <code>err</code> field in the context can be used to find out what the cause of this error is.</p>
+<p>The following examples shows a simple pipeline (resulting in only a single call to <code>write(2)</code> and<br>a single call to <code>read(2)</code>):<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">redisReply *reply;</span><br><span class="line">redisAppendCommand(context,<span class="string">"SET foo bar"</span>);</span><br><span class="line">redisAppendCommand(context,<span class="string">"GET foo"</span>);</span><br><span class="line">redisGetReply(context,&amp;reply); <span class="comment">// reply for SET</span></span><br><span class="line">freeReplyObject(reply);</span><br><span class="line">redisGetReply(context,&amp;reply); <span class="comment">// reply for GET</span></span><br><span class="line">freeReplyObject(reply);</span><br></pre></td></tr></table></figure></p>
+<p>This API can also be used to implement a blocking subscriber:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">reply = redisCommand(context,<span class="string">"SUBSCRIBE foo"</span>);</span><br><span class="line">freeReplyObject(reply);</span><br><span class="line"><span class="keyword">while</span>(redisGetReply(context,&amp;reply) == REDIS_OK) &#123;</span><br><span class="line">    <span class="comment">// consume message</span></span><br><span class="line">    freeReplyObject(reply);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="Errors"><a href="#Errors" class="headerlink" title="Errors"></a>Errors</h3><p>When a function call is not successful, depending on the function either <code>NULL</code> or <code>REDIS_ERR</code> is<br>returned. The <code>err</code> field inside the context will be non-zero and set to one of the<br>following constants:</p>
+<ul>
+<li><p><strong><code>REDIS_ERR_IO</code></strong>:<br>  There was an I/O error while creating the connection, trying to write<br>  to the socket or read from the socket. If you included <code>errno.h</code> in your<br>  application, you can use the global <code>errno</code> variable to find out what is<br>  wrong.</p>
+</li>
+<li><p><strong><code>REDIS_ERR_EOF</code></strong>:<br>  The server closed the connection which resulted in an empty read.</p>
+</li>
+<li><p><strong><code>REDIS_ERR_PROTOCOL</code></strong>:<br>  There was an error while parsing the protocol.</p>
+</li>
+<li><p><strong><code>REDIS_ERR_OTHER</code></strong>:<br>  Any other error. Currently, it is only used when a specified hostname to connect<br>  to cannot be resolved.</p>
+</li>
+</ul>
+<p>In every case, the <code>errstr</code> field in the context will be set to hold a string representation<br>of the error.</p>
+<h2 id="Asynchronous-API"><a href="#Asynchronous-API" class="headerlink" title="Asynchronous API"></a>Asynchronous API</h2><p>Hiredis comes with an asynchronous API that works easily with any event library.<br>Examples are bundled that show using Hiredis with <a href="http://software.schmorp.de/pkg/libev.html" target="_blank" rel="noopener">libev</a><br>and <a href="http://monkey.org/~provos/libevent/" target="_blank" rel="noopener">libevent</a>.</p>
+<h3 id="Connecting-1"><a href="#Connecting-1" class="headerlink" title="Connecting"></a>Connecting</h3><p>The function <code>redisAsyncConnect</code> can be used to establish a non-blocking connection to<br>Redis. It returns a pointer to the newly created <code>redisAsyncContext</code> struct. The <code>err</code> field<br>should be checked after creation to see if there were errors creating the connection.<br>Because the connection that will be created is non-blocking, the kernel is not able to<br>instantly return if the specified host and port is able to accept a connection.<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">redisAsyncContext *c = redisAsyncConnect(<span class="string">"127.0.0.1"</span>, <span class="number">6379</span>);</span><br><span class="line"><span class="keyword">if</span> (c-&gt;err) &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Error: %s\n"</span>, c-&gt;errstr);</span><br><span class="line">    <span class="comment">// handle error</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>The asynchronous context can hold a disconnect callback function that is called when the<br>connection is disconnected (either because of an error or per user request). This function should<br>have the following prototype:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span>(<span class="keyword">const</span> redisAsyncContext *c, <span class="keyword">int</span> status);</span><br></pre></td></tr></table></figure></p>
+<p>On a disconnect, the <code>status</code> argument is set to <code>REDIS_OK</code> when disconnection was initiated by the<br>user, or <code>REDIS_ERR</code> when the disconnection was caused by an error. When it is <code>REDIS_ERR</code>, the <code>err</code><br>field in the context can be accessed to find out the cause of the error.</p>
+<p>The context object is always freed after the disconnect callback fired. When a reconnect is needed,<br>the disconnect callback is a good point to do so.</p>
+<p>Setting the disconnect callback can only be done once per context. For subsequent calls it will<br>return <code>REDIS_ERR</code>. The function to set the disconnect callback has the following prototype:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">redisAsyncSetDisconnectCallback</span><span class="params">(redisAsyncContext *ac, redisDisconnectCallback *fn)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<h3 id="Sending-commands-and-their-callbacks"><a href="#Sending-commands-and-their-callbacks" class="headerlink" title="Sending commands and their callbacks"></a>Sending commands and their callbacks</h3><p>In an asynchronous context, commands are automatically pipelined due to the nature of an event loop.<br>Therefore, unlike the synchronous API, there is only a single way to send commands.<br>Because commands are sent to Redis asynchronously, issuing a command requires a callback function<br>that is called when the reply is received. Reply callbacks should have the following prototype:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span>(redisAsyncContext *c, <span class="keyword">void</span> *reply, <span class="keyword">void</span> *privdata);</span><br></pre></td></tr></table></figure></p>
+<p>The <code>privdata</code> argument can be used to curry arbitrary data to the callback from the point where<br>the command is initially queued for execution.</p>
+<p>The functions that can be used to issue commands in an asynchronous context are:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">redisAsyncCommand</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">  redisAsyncContext *ac, redisCallbackFn *fn, <span class="keyword">void</span> *privdata,</span></span></span><br><span class="line"><span class="function"><span class="params">  <span class="keyword">const</span> <span class="keyword">char</span> *format, ...)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">redisAsyncCommandArgv</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">  redisAsyncContext *ac, redisCallbackFn *fn, <span class="keyword">void</span> *privdata,</span></span></span><br><span class="line"><span class="function"><span class="params">  <span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> **argv, <span class="keyword">const</span> <span class="keyword">size_t</span> *argvlen)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>Both functions work like their blocking counterparts. The return value is <code>REDIS_OK</code> when the command<br>was successfully added to the output buffer and <code>REDIS_ERR</code> otherwise. Example: when the connection<br>is being disconnected per user-request, no new commands may be added to the output buffer and <code>REDIS_ERR</code> is<br>returned on calls to the <code>redisAsyncCommand</code> family.</p>
+<p>If the reply for a command with a <code>NULL</code> callback is read, it is immediately freed. When the callback<br>for a command is non-<code>NULL</code>, the memory is freed immediately following the callback: the reply is only<br>valid for the duration of the callback.</p>
+<p>All pending callbacks are called with a <code>NULL</code> reply when the context encountered an error.</p>
+<h3 id="Disconnecting"><a href="#Disconnecting" class="headerlink" title="Disconnecting"></a>Disconnecting</h3><p>An asynchronous connection can be terminated using:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">redisAsyncDisconnect</span><span class="params">(redisAsyncContext *ac)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>When this function is called, the connection is <strong>not</strong> immediately terminated. Instead, new<br>commands are no longer accepted and the connection is only terminated when all pending commands<br>have been written to the socket, their respective replies have been read and their respective<br>callbacks have been executed. After this, the disconnection callback is executed with the<br><code>REDIS_OK</code> status and the context object is freed.</p>
+<h3 id="Hooking-it-up-to-event-library-X"><a href="#Hooking-it-up-to-event-library-X" class="headerlink" title="Hooking it up to event library X"></a>Hooking it up to event library <em>X</em></h3><p>There are a few hooks that need to be set on the context object after it is created.<br>See the <code>adapters/</code> directory for bindings to <em>libev</em> and <em>libevent</em>.</p>
+<h2 id="Reply-parsing-API"><a href="#Reply-parsing-API" class="headerlink" title="Reply parsing API"></a>Reply parsing API</h2><p>Hiredis comes with a reply parsing API that makes it easy for writing higher<br>level language bindings.</p>
+<p>The reply parsing API consists of the following functions:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">redisReader *<span class="title">redisReaderCreate</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">redisReaderFree</span><span class="params">(redisReader *reader)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">redisReaderFeed</span><span class="params">(redisReader *reader, <span class="keyword">const</span> <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> len)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">redisReaderGetReply</span><span class="params">(redisReader *reader, <span class="keyword">void</span> **reply)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>The same set of functions are used internally by hiredis when creating a<br>normal Redis context, the above API just exposes it to the user for a direct<br>usage.</p>
+<h3 id="Usage"><a href="#Usage" class="headerlink" title="Usage"></a>Usage</h3><p>The function <code>redisReaderCreate</code> creates a <code>redisReader</code> structure that holds a<br>buffer with unparsed data and state for the protocol parser.</p>
+<p>Incoming data – most likely from a socket – can be placed in the internal<br>buffer of the <code>redisReader</code> using <code>redisReaderFeed</code>. This function will make a<br>copy of the buffer pointed to by <code>buf</code> for <code>len</code> bytes. This data is parsed<br>when <code>redisReaderGetReply</code> is called. This function returns an integer status<br>and a reply object (as described above) via <code>void **reply</code>. The returned status<br>can be either <code>REDIS_OK</code> or <code>REDIS_ERR</code>, where the latter means something went<br>wrong (either a protocol error, or an out of memory error).</p>
+<p>The parser limits the level of nesting for multi bulk payloads to 7. If the<br>multi bulk nesting level is higher than this, the parser returns an error.</p>
+<h3 id="Customizing-replies"><a href="#Customizing-replies" class="headerlink" title="Customizing replies"></a>Customizing replies</h3><p>The function <code>redisReaderGetReply</code> creates <code>redisReply</code> and makes the function<br>argument <code>reply</code> point to the created <code>redisReply</code> variable. For instance, if<br>the response of type <code>REDIS_REPLY_STATUS</code> then the <code>str</code> field of <code>redisReply</code><br>will hold the status as a vanilla C string. However, the functions that are<br>responsible for creating instances of the <code>redisReply</code> can be customized by<br>setting the <code>fn</code> field on the <code>redisReader</code> struct. This should be done<br>immediately after creating the <code>redisReader</code>.</p>
+<p>For example, <a href="https://github.com/pietern/hiredis-rb/blob/master/ext/hiredis_ext/reader.c" target="_blank" rel="noopener">hiredis-rb</a><br>uses customized reply object functions to create Ruby objects.</p>
+<h3 id="Reader-max-buffer"><a href="#Reader-max-buffer" class="headerlink" title="Reader max buffer"></a>Reader max buffer</h3><p>Both when using the Reader API directly or when using it indirectly via a<br>normal Redis context, the redisReader structure uses a buffer in order to<br>accumulate data from the server.<br>Usually this buffer is destroyed when it is empty and is larger than 16<br>KiB in order to avoid wasting memory in unused buffers</p>
+<p>However when working with very big payloads destroying the buffer may slow<br>down performances considerably, so it is possible to modify the max size of<br>an idle buffer changing the value of the <code>maxbuf</code> field of the reader structure<br>to the desired value. The special value of 0 means that there is no maximum<br>value for an idle buffer, so the buffer will never get freed.</p>
+<p>For instance if you have a normal Redis context you can set the maximum idle<br>buffer to zero (unlimited) just with:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">context-&gt;reader-&gt;maxbuf = <span class="number">0</span>;</span><br></pre></td></tr></table></figure></p>
+<p>This should be done only in order to maximize performances when working with<br>large payloads. The context should be set back to <code>REDIS_READER_MAX_BUF</code> again<br>as soon as possible in order to prevent allocation of useless memory.</p>
+<h2 id="AUTHORS"><a href="#AUTHORS" class="headerlink" title="AUTHORS"></a>AUTHORS</h2><p>Hiredis was written by Salvatore Sanfilippo (antirez at gmail) and<br>Pieter Noordhuis (pcnoordhuis at gmail) and is released under the BSD license.<br>Hiredis is currently maintained by Matt Stancliff (matt at genges dot com) and<br>Jan-Erik Rediger (janerik at fnordig dot com)</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2018/01/04/hiredis/" data-id="cjc08rzvc0002fovmmydi0ez9" class="article-share-link">Teilen</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redis/">redis</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Kategorien</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Redis/">Redis</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis/">redis</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/redis/" style="font-size: 10px;">redis</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/01/">January 2018</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2018/01/04/hiredis/">hiredis文档</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2018 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+
+
+  </div>
+</body>
+</html>
